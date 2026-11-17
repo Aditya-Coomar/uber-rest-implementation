@@ -1,26 +1,93 @@
 @import "tailwindcss";
 
+/*
+ * Kerb design tokens. Daylight street map: kerbstone land, white roads,
+ * and signal amber (the colour of the city's auto-rickshaws) reserved for
+ * the things that are yours: your route, your driver, your ETA.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
+  --ink: #22262b;
+  --ink-2: #4a5059;
+  --muted: #6b7078;
+  --line: #d5d8d0;
+  --land: #e7e9e2;
+  --paper: #f7f8f4;
+  --sheet: #ffffff;
+  --amber: #f4b41a;
+  --amber-deep: #8a5e00;
+  --amber-wash: #fdf0cc;
+  --park: #c9ddbf;
+  --water: #b4d3e3;
+  --good: #1d7a45;
+  --good-wash: #e3f1e8;
+  --bad: #b3261e;
+  --bad-wash: #fbe7e5;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-land: var(--land);
+  --color-paper: var(--paper);
+  --color-sheet: var(--sheet);
+  --color-amber: var(--amber);
+  --color-amber-deep: var(--amber-deep);
+  --color-amber-wash: var(--amber-wash);
+  --color-good: var(--good);
+  --color-good-wash: var(--good-wash);
+  --color-bad: var(--bad);
+  --color-bad-wash: var(--bad-wash);
+  --font-sans: var(--font-ui);
+  --font-display: var(--font-display);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html,
+body {
+  height: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-display {
+  font-family: var(--font-display), var(--font-ui), sans-serif;
+  font-variation-settings: "wdth" 82;
+  letter-spacing: -0.02em;
+}
+
+:focus-visible {
+  outline: 2.5px solid var(--amber-deep);
+  outline-offset: 2px;
+}
+
+@keyframes kerb-ping {
+  0% { transform: scale(0.6); opacity: 0.55; }
+  100% { transform: scale(2.6); opacity: 0; }
+}
+.kerb-ping {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: kerb-ping 1.8s cubic-bezier(0.2, 0.6, 0.4, 1) infinite;
+}
+
+@keyframes kerb-sheet-in {
+  from { transform: translateY(12px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+.kerb-step {
+  animation: kerb-sheet-in 240ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+  }
 }
