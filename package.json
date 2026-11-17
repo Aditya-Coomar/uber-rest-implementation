@@ -1,0 +1,21 @@
+{
+  "name": "uber-rest-implementation",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local ride-booking SOA demo: Rides, Marketplace and Payments APIs, a durable worker, and a Next.js rider app on LocalStack.",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "install:all": "npm ci --prefix rides-api && npm ci --prefix marketplace-api && npm ci --prefix payments-api && npm ci --prefix load-simulator && npm ci --prefix frontend",
+    "build": "npm run build --prefix rides-api && npm run build --prefix marketplace-api && npm run build --prefix payments-api && npm run build --prefix load-simulator",
+    "typecheck": "npm run typecheck --prefix rides-api && npm run typecheck --prefix marketplace-api && npm run typecheck --prefix payments-api && npm run typecheck --prefix load-simulator && npm run typecheck --prefix frontend",
+    "bootstrap": "npm run build && node scripts/start.mjs --bootstrap-only",
+    "start": "npm run build && node scripts/start.mjs",
+    "smoke": "npm run build && node --env-file-if-exists=.env rides-api/dist/scripts/smoke.js",
+    "analytics:replay": "npm run build --prefix rides-api && node --env-file-if-exists=.env rides-api/dist/scripts/replay.js",
+    "frontend:dev": "npm run dev --prefix frontend",
+    "frontend:build": "npm run build --prefix frontend",
+    "frontend:lint": "npm run lint --prefix frontend"
+  }
+}
