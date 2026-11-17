@@ -1,46 +1,21 @@
+import { setServiceName, logger } from './lib/log';
+setServiceName('payments-api');
 import app from './app';
-import logger from './utils/logger';
+import { config } from './config';
 
-const PORT = process.env.PORT || 3000;
+const server = app.listen(config.port, config.host, () => {
+  logger.info('listening', { url: `http://${config.host}:${config.port}`, table: config.tableName });
+});
 
-// Initialize database connection and start server
-async function startServer() {
-  try {
-    // Start the Express server
-    const server = app.listen(PORT, () => {
-      logger.info(`Server running on port ${PORT}`);
-      console.log(`Server running on port ${PORT}`);
-    });
+server.on('error', (err) => {
+  logger.error('failed to start server', { errorMessage: err.message });
+  process.exit(1);
+});
 
-    // Handle graceful shutdown
-    const gracefulShutdown = async (signal: string) => {
-      logger.info(`${signal} received, shutting down gracefully`);
-
-      // Close server
-      server.close(async () => {
-        try {
-          process.exit(0);
-        } catch (error) {
-          logger.error('Error during graceful shutdown:', error);
-          process.exit(1);
-        }
-      });
-
-      // Force close after 10 seconds
-      setTimeout(() => {
-        logger.error('Forced shutdown after timeout');
-        process.exit(1);
-      }, 10000);
-    };
-
-    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-  } catch (error) {
-    logger.error('Failed to start server:', error);
-    console.error('Failed to start server:', error);
-    process.exit(1);
-  }
+function shutdown(signal: string): void {
+  logger.info('shutting down', { signal });
+  server.close(() => process.exit(0));
+  setTimeout(() => process.exit(1), 10_000).unref();
 }
-
-// Start the server
-startServer();
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
