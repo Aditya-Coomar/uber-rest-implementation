@@ -16,7 +16,9 @@ export async function attemptMatch(
   requestId?: string,
 ): Promise<{ ride: RideRecord } | { unresolved: string }> {
   const pickup = { lat: ride.pickup.lat, lng: ride.pickup.lng };
-  const result = await reserveDriver(ride.rideId, pickup, deadlineMs, requestId);
+  // The load simulator uses sim- rider IDs. Retries derive the same pool from the stored ride.
+  const pool = ride.riderId.startsWith('sim-') ? 'simulation' : 'demo';
+  const result = await reserveDriver(ride.rideId, pickup, pool, deadlineMs, requestId);
   if (result.kind === 'UNAVAILABLE') {
     logger.warn('match unresolved', { rideId: ride.rideId, requestId, reason: result.reason });
     return { unresolved: result.reason };

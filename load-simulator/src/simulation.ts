@@ -247,7 +247,7 @@ export class Simulation {
   private async sampleLoop(): Promise<void> {
     while (!this.samplingDone) {
       const [fleet, pipeline, analytics] = await Promise.all([
-        call('GET', `${config.marketplaceBaseUrl}/internal/fleet/stats`, undefined, undefined, 2_000).catch(() => null),
+        call('GET', `${config.marketplaceBaseUrl}/internal/fleet/stats?pool=simulation`, undefined, undefined, 2_000).catch(() => null),
         call('GET', `${config.ridesBaseUrl}/ops/pipeline`, undefined, undefined, 3_000).catch(() => null),
         call('GET', `${config.ridesBaseUrl}/analytics/summary`, undefined, undefined, 2_000).catch(() => null),
       ]);

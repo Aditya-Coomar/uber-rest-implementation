@@ -79,6 +79,15 @@ export async function listDrivers(): Promise<DriverItem[]> {
     if ((err as Error).name !== 'ValidationException' && (err as Error).name !== 'ResourceNotFoundException') throw err;
     return scanDrivers();
   }
+  return readDriverKeys(keys);
+}
+
+/** The rider app uses the seeded fleet even while a load simulation runs. */
+export function listDemoDrivers(): Promise<DriverItem[]> {
+  return readDriverKeys(SEED_DRIVERS.map(({ driverId }) => ({ pk: driverKey(driverId) })));
+}
+
+async function readDriverKeys(keys: Array<{ pk: string }>): Promise<DriverItem[]> {
   const drivers: DriverItem[] = [];
   for (let i = 0; i < keys.length; i += 100) {
     let request: Record<string, { Keys: Array<{ pk: string }>; ConsistentRead: boolean }> | undefined = {
@@ -322,8 +331,9 @@ export async function removeSimulatedFleet(): Promise<{ removed: number; busy: n
   return { removed, busy };
 }
 
-export async function fleetStats(): Promise<{ total: number; available: number; busy: number; simulated: number }> {
-  const drivers = await listDrivers();
+export async function fleetStats(simulationOnly = false): Promise<{ total: number; available: number; busy: number; simulated: number }> {
+  const allDrivers = await listDrivers();
+  const drivers = simulationOnly ? allDrivers.filter((d) => d.simulated === true) : allDrivers;
   const busy = drivers.filter((d) => d.currentRideId).length;
   return { total: drivers.length, available: drivers.length - busy, busy, simulated: drivers.filter((d) => d.simulated).length };
 }

@@ -648,6 +648,31 @@ async function main(): Promise<void> {
     check(ops.status === 200 && typeof ops.json?.jobs?.total === 'number' && ops.json?.eventQueue !== null && ops.json?.worker?.state === 'RUNNING', 'pipeline status endpoint', ops.json);
     check(b1.indexes?.['jobs-due'] === 'created' && b1.indexes?.drivers === 'created', 'job and driver indexes created by bootstrap', b1.indexes);
 
+    await waitDriversFree();
+    const simulatedFleet = new URL('/internal/fleet/simulated', services.get('marketplace')!.def.healthUrl);
+    const seeded = await fetch(simulatedFleet, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ count: 1 }),
+    });
+    check(seeded.status === 200, 'isolated simulation fleet seeded');
+    const simulatorBooking = () => api('POST', '/rides', {
+      body: { ...booking('demo_approve'), riderId: 'sim-fleet-isolation' }, key: newKey('isolated-fleet'),
+    });
+    const simulatorRide = await simulatorBooking();
+    check(simulatorRide.status === 201 && simulatorRide.json?.driver?.driverId?.startsWith('sim-driver-'),
+      'simulated rides use only simulated drivers', simulatorRide.json?.driver);
+    const overCapacity = await simulatorBooking();
+    check(overCapacity.status === 409 && overCapacity.json?.error?.code === 'NO_DRIVERS_AVAILABLE',
+      'exhausting the simulator fleet cannot reserve a demo driver', overCapacity.json?.error);
+    const demoCars = await api('GET', `/drivers/nearby?lat=${CITY_CENTER.lat}&lng=${CITY_CENTER.lng}`);
+    check(demoCars.status === 200 && demoCars.json?.drivers?.length === 3,
+      'all demo cars stay visible while the simulation fleet is full', demoCars.json);
+    for (const result of [simulatorRide, overCapacity]) {
+      if (result.json?.status === 'ASSIGNED') await api('POST', `/rides/${result.json.rideId}/cancel`);
+    }
+    await waitDriversFree();
+    const retired = await fetch(simulatedFleet, { method: 'DELETE' });
+    check(retired.ok && ((await retired.json()) as { removed?: number }).removed === 1, 'isolated simulation driver released and removed');
+
     const sim = await fetch(`${SIM}/simulations`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ratePerSecond: 4, durationSeconds: 6, fleetSize: 12, cancelRate: 0.2, tripSeconds: 1, retryDeclined: true }) });
     check(sim.status === 202, 'load simulation accepted');
     const busySim = await fetch(`${SIM}/simulations`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });

@@ -24,11 +24,12 @@ function isDriverSnapshot(value: unknown): value is DriverSnapshot {
 export async function reserveDriver(
   rideId: string,
   pickup: { lat: number; lng: number },
+  pool: 'demo' | 'simulation',
   deadlineMs: number,
   requestId?: string,
 ): Promise<ReserveResult> {
   const url = `${config.marketplaceBaseUrl}/internal/reservations/${encodeURIComponent(rideId)}`;
-  const res = await callJson('PUT', url, { body: { pickup }, deadlineMs, requestId });
+  const res = await callJson('PUT', url, { body: { pickup, pool }, deadlineMs, requestId });
   if (!res.ok) return { kind: 'UNAVAILABLE', reason: res.reason };
   if (res.status === 200) {
     const body = res.body as Record<string, unknown> | null;

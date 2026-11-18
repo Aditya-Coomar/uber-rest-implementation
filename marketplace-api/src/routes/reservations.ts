@@ -1,10 +1,10 @@
 import { Router } from 'express';
-import { ApiError } from '../lib/errors';
+import { ApiError, invalidRequest } from '../lib/errors';
 import { annotate } from '../lib/http';
 import { logger } from '../lib/log';
 import { Coordinates, fingerprint, isValidId, parseCoordinates, requireObject } from '../lib/validate';
 import { haversineMeters } from '../drivers';
-import { Reservation, claimDriver, getReservation, listDrivers, rankAvailable, recordNoDriver, releaseReservation, snapshotOf } from '../store';
+import { Reservation, claimDriver, getReservation, listDemoDrivers, listDrivers, rankAvailable, recordNoDriver, releaseReservation, snapshotOf } from '../store';
 
 const router = Router();
 
@@ -39,6 +39,9 @@ router.put('/:rideId', async (req, res) => {
   annotate(res, { rideId });
   const body = requireObject(req.body, 'body');
   const pickup: Coordinates = parseCoordinates(body.pickup, 'pickup');
+  if (body.pool !== undefined && body.pool !== 'demo' && body.pool !== 'simulation') {
+    throw invalidRequest('pool must be demo or simulation.', { field: 'pool' });
+  }
   const pickupFingerprint = fingerprint(pickup);
 
   const existing = await getReservation(rideId);
@@ -46,7 +49,10 @@ router.put('/:rideId', async (req, res) => {
 
   const now = new Date().toISOString();
   const base = { rideId, pickup, pickupFingerprint, createdAt: now, updatedAt: now };
-  const candidates = rankAvailable(await listDrivers(), pickup);
+  const fleet = body.pool === 'simulation'
+    ? (await listDrivers()).filter((driver) => driver.simulated === true)
+    : await listDemoDrivers();
+  const candidates = rankAvailable(fleet, pickup);
 
   for (const driver of candidates) {
     const snapshot = snapshotOf(driver);
